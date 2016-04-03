@@ -50,7 +50,6 @@ function [m_k] = learn_intensity_landmarks(training_image_path, i_min, i_max)
                                                     %no available
                                                     
         % map deciles with image intensities       
-        whos template_centers
         m(im,1) = template_centers(find(percents >= 1 & percents < 5,1,'first'));
         m(im,2) = template_centers(find(round_percents == 10,1,'last'));
         m(im,3) = template_centers(find(round_percents == 20,1,'last'));

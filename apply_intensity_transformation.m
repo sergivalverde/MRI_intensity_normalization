@@ -45,19 +45,20 @@ function apply_intensity_transformation(input_path, output_path, m_k)
     T.values(9) = template_centers(find(round_percents == 80,1,'last'));
     T.values(10)= template_centers(find(round_percents == 90,1,'last'));
     T.values(11)= template_centers(find(percents > 90 & percents < 100,1, 'last'));
+    
     T.binsize = (T.values(11) - T.values(1)) / (length(h_template) -1);
-
 
     % apply the transformation between the learned model and the
     % current image
     normalized_scan = zeros(size(template));
     normalized_scan(template_brainmask == 1) = spline(T.values, m_k.landmarks, template(:));
-                                                      
+
     % intensities > 100% are just mapped linearly to preserve the
     % same intensity transformation
-    model_linear_rate = (m_k.info.max_int - m_k.info.min_int) / (m_k.info.binsize -1);
-    normalized_scan(template > T.values(11)) = template(template > T.values(11)) .* model_linear_rate;
-                                                      
+    model_linear_rate = ((m_k.info.max_int - m_k.info.min_int) / (m_k.info.binsize -1)) / T.binsize;
+    normalized_scan(current_image > T.values(11)) = current_image(current_image > T.values(11)) .* model_linear_rate;
+    normalized_scan(current_image  < T.values(1)) = current_image(current_image < T.values(1)) .* model_linear_rate;
+
     % save the normalized scan
     current_scan.img = normalized_scan;
     save_nifti(current_scan, output_path);
