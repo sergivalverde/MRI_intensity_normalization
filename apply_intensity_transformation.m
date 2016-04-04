@@ -17,8 +17,6 @@ function apply_intensity_transformation(input_path, output_path, m_k)
 %
 % ***************************************************************************************************
 
-    % options
-    num_bins = 256;
        
     % load the input image
     im_path = (input_path);
@@ -26,27 +24,23 @@ function apply_intensity_transformation(input_path, output_path, m_k)
     current_image = current_scan.img;
     template_brainmask = current_image > 0.05;
     template = current_image(template_brainmask == 1);
-    
-    % compute the histogram and the percentiles 
-    [h_template,template_centers] = hist(template, num_bins);
-    cum_template = cumsum(h_template);
-    percents = ceil(cum_template ./ length(template(:)) * 100);
-    round_percents = ceil(percents ./ 10) * 10;
 
-    % map deciles to image intensities
-    T.values(1) = template_centers(find(percents >= 1 & percents < 5,1,'first'));
-    T.values(2) = template_centers(find(round_percents == 10,1,'last'));
-    T.values(3) = template_centers(find(round_percents == 20,1,'last'));
-    T.values(4) = template_centers(find(round_percents == 30,1,'last'));
-    T.values(5) = template_centers(find(round_percents == 40,1,'last'));
-    T.values(6) = template_centers(find(round_percents == 50,1,'last'));
-    T.values(7) = template_centers(find(round_percents == 60,1,'last'));
-    T.values(8) = template_centers(find(round_percents == 70,1,'last'));
-    T.values(9) = template_centers(find(round_percents == 80,1,'last'));
-    T.values(10)= template_centers(find(round_percents == 90,1,'last'));
-    T.values(11)= template_centers(find(percents > 90 & percents < 100,1, 'last'));
+
+    % find the minimum and maximum percentiles (p1 and p99) and the deciles (p10...p90)
+    Y = sort(template(:));
+    T.values(1) = Y(ceil(0.01.*length(Y)));
+    T.values(2) = Y(ceil(0.1.*length(Y)));
+    T.values(3) = Y(ceil(0.2.*length(Y)));
+    T.values(4) = Y(ceil(0.3.*length(Y)));
+    T.values(5) = Y(ceil(0.4.*length(Y)));
+    T.values(6) = Y(ceil(0.5.*length(Y)));
+    T.values(7) = Y(ceil(0.6.*length(Y)));
+    T.values(8) = Y(ceil(0.7.*length(Y)));
+    T.values(9) = Y(ceil(0.8.*length(Y)));
+    T.values(10) = Y(ceil(0.9.*length(Y)));
+    T.values(11) = Y(ceil(0.99.*length(Y)));
+    T.binsize = (T.values(11) - T.values(1)) / (length(Y) -1);
     
-    T.binsize = (T.values(11) - T.values(1)) / (length(h_template) -1);
 
     % apply the transformation between the learned model and the
     % current image
@@ -55,7 +49,7 @@ function apply_intensity_transformation(input_path, output_path, m_k)
 
     % intensities > 100% are just mapped linearly to preserve the
     % same intensity transformation
-    model_linear_rate = ((m_k.info.max_int - m_k.info.min_int) / (m_k.info.binsize -1)) / T.binsize;
+    model_linear_rate = ((m_k.info.max_int - m_k.info.min_int) / (length(Y) -1)) / T.binsize;
     normalized_scan(current_image > T.values(11)) = current_image(current_image > T.values(11)) .* model_linear_rate;
     normalized_scan(current_image  < T.values(1)) = current_image(current_image < T.values(1)) .* model_linear_rate;
 

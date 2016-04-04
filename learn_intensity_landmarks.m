@@ -21,15 +21,11 @@ function [m_k] = learn_intensity_landmarks(training_image_path, i_min, i_max)
 %
 % ***************************************************************************************************
     
-
-    % options
-    bin_size = 256;
-
     num_images = size(training_image_path,1);
     
-    % compute the landmarks for each training image
+    % compute the landmarks for each training image. Landmarks are learned without using the histogram.
     for im=1:num_images
-     
+        
         % load the current training image
         im_path = cell2mat(training_image_path(im));
         current_scan = load_nifti(im_path);
@@ -37,37 +33,27 @@ function [m_k] = learn_intensity_landmarks(training_image_path, i_min, i_max)
         template_brainmask = current_image > 0.05;
         template = current_image(template_brainmask == 1);
         
-        % compute the histogram and the percentiles
-        [h_template, template_centers] = hist(template, bin_size);
-        histograms(im,:) = h_template;
-        histogram_centers(im,:) = template_centers;
-        
-        % compute the landmark locations 
-        cum_template = cumsum(h_template);
-        percents = ceil(cum_template ./ length(template(:)) * 100);
-        percentiles(im,:) = percents; 
-        round_percents = ceil(percents ./ 10) * 10; %force deciles to exist when
-                                                    %no available
-                                                    
-        % map deciles with image intensities       
-        m(im,1) = template_centers(find(percents >= 1 & percents < 5,1,'first'));
-        m(im,2) = template_centers(find(round_percents == 10,1,'last'));
-        m(im,3) = template_centers(find(round_percents == 20,1,'last'));
-        m(im,4) = template_centers(find(round_percents == 30,1,'last'));
-        m(im,5) = template_centers(find(round_percents == 40,1,'last'));
-        m(im,6) = template_centers(find(round_percents == 50,1,'last'));
-        m(im,7) = template_centers(find(round_percents == 60,1,'last'));
-        m(im,8) = template_centers(find(round_percents == 70,1,'last'));
-        m(im,9) = template_centers(find(round_percents == 80,1,'last'));
-        m(im,10)= template_centers(find(round_percents  == 90,1,'last'));
-        m(im,11)= template_centers(find(percents > 90 & percents < 100,1, 'last'));
+        % find the minimum and maximum percentiles (p1 and p99) and the deciles (p10...p90)
+        Y = sort(template(:));        
+        m(im,1) =  Y(ceil(0.01.*length(Y)));
+        m(im,2) =  Y(ceil(0.1.*length(Y)));
+        m(im,3) =  Y(ceil(0.2.*length(Y)));
+        m(im,4) =  Y(ceil(0.3.*length(Y)));
+        m(im,5) =  Y(ceil(0.4.*length(Y)));
+        m(im,6) =  Y(ceil(0.5.*length(Y)));
+        m(im,7) =  Y(ceil(0.6.*length(Y)));
+        m(im,8) =  Y(ceil(0.7.*length(Y)));
+        m(im,9) =  Y(ceil(0.8.*length(Y)));
+        m(im,10) = Y(ceil(0.9.*length(Y)));
+        m(im,11) = Y(ceil(0.99.*length(Y)));
+
         
         % map linearly the intensities with respect to i_max and i_min
-        linear_rate(im) = ((i_max - i_min) / (length(h_template) -1)) / ...
-            ((m(im,11) - m(im,1)) / (length(h_template)-1));
+        linear_rate(im) = ((i_max - i_min) / (length(Y) -1)) / ((m(im,11) - m(im,1)) / (length(Y)-1));
         m(im,:) = m(im,:) .* linear_rate(im);
-        
     end
+    
+    
     
     % rounded means of each of the landmarks from the set of training images
     m_k.landmarks = mean(m,1)';
@@ -79,10 +65,6 @@ function [m_k] = learn_intensity_landmarks(training_image_path, i_min, i_max)
     m_k.info.max_int = i_max;
     m_k.info.num_images = num_images;
     m_k.info.image_path = training_image_path;
-    m_k.info.binsize = bin_size;
-    m_k.info.histograms = histograms;
-    m_k.info.histogram_centers = histogram_centers;
-    m_k.info.percentiles = percentiles;
     m_k.info.linear_rate = linear_rate;
-       
+    m_k.info.percentiles = m;   
 end
