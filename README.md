@@ -40,7 +40,7 @@ apply_intensity_transformation(input_image, out_name, m_k);
 
 ## Notes:
 
-+ Input images have to be skull-stripped for optimal results. If images are not skull-stripped but background intensity is `< 0.05`, the method should also work. With background intensities higher than this threshold the landmarks may be altered in some unexpected way due to the skull  
++ Input images have to be skull-stripped for optimal results. If images are not skull-stripped but background intensity is `< 0.05`, the method should also work. With background intensities higher than this threshold the landmarks may be altered in some unexpected way due to remaining skull, fat or eyes.  
 
 + The current method uses the `nifti_tools` repository available [here](https://github.com/sergivalverde/nifti_tools). Add it to your Matlab path or initialize the included submodule after cloning the project as:
 
