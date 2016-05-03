@@ -16,8 +16,13 @@ function apply_intensity_transformation(input_path, output_path, m_k, methodT)
 %  NeuroImage Computing Group. Vision and Robotics Insititute (University of Girona)
 %
 % **************************************************************************************************       
+
+    num_images = size(input_path,2);
+    for im=1:num_images
+
     % load the input image
-    im_path = (input_path);
+    im_path = cell2mat(input_path(im));
+    imOut_path = cell2mat(output_path(im));
     current_scan = load_nifti(im_path);
     current_image = current_scan.img;
     template_brainmask = current_image > 0.05;
@@ -43,30 +48,32 @@ function apply_intensity_transformation(input_path, output_path, m_k, methodT)
 
     T.values(11) = Y(ceil(0.99.*length(Y)));    
 
-   maxT=max(Y);
-    %set values before P1 and after P99 to zero
+    maxT=max(Y);
+
+    % apply the transformation to the current image
+
     mask=(current_image<T.values(1));
 
-	 SscaleExtremeMin= m_k.landmarks(1) + ( minT - T.values(1) ) / ( T.values(2)-T.values(1) ) * (m_k.landmarks(2) - m_k.landmarks(1));
-	 SscaleExtremeMax= m_k.landmarks(10)+ ( maxT - T.values(10) ) / ( T.values(11)-T.values(10) ) * (m_k.landmarks(11) - m_k.landmarks(10));
-
-
+    SscaleExtremeMin= m_k.landmarks(1) + ( minT - T.values(1) ) / ( T.values(2)-T.values(1) ) * (m_k.landmarks(2) - m_k.landmarks(1));
+    SscaleExtremeMax= m_k.landmarks(10)+ ( maxT - T.values(10) ) / ( T.values(11)-T.values(10) ) * (m_k.landmarks(11) - m_k.landmarks(10));
+     
     if strcmp(methodT,'linear')
 
 	 %normalized_scan = interp1( [minT T.values maxT], [SscaleExtremeMin m_k.landmarks SscaleExtremeMax], current_image) ;
-	 normalized_scan = interp1( T.values, m_k.landmarks, current_image) ;
+	 normalized_scan = interp1( [ T.values maxT ],[ m_k.landmarks SscaleExtremeMax ], current_image) ;
 
     elseif strcmp(methodT,'spline')
 	%normalized_scan = spline( [minT T.values maxT], [SscaleExtremeMin m_k.landmarks SscaleExtremeMax], current_image);
-	normalized_scan = spline( T.values, m_k.landmarks, current_image);
+	normalized_scan = spline( [ T.values maxT ],[ m_k.landmarks SscaleExtremeMax ], current_image);
     else
 	error('Invalid value for Method')
  
     end
+
 	normalized_scan(mask)=0;
 
     % save the normalized scan
     current_scan.img = normalized_scan;
-    save_nifti(current_scan, output_path,'u');
-       
+    save_nifti(current_scan, imOut_path);
+     end  
 end

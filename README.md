@@ -12,6 +12,9 @@ The normalization is carried out in two steps:
 From a set of training images, the landmark parameters are learned using the function `learn_intensity_parameters`. Intensity parameters `ì_min` and  `i_max` have to be set by the user. These two values establish the minimum and maximum intensities of the standard intensity scale.
 
 ```
+
+methodT= 'spline'; % or methodT= 'linear';
+
 train_im_path{1} = '/path/to/images/1/t1.nii';
 train_im_path{2} = '/path/to/images/2/t1.nii';
 ...
@@ -35,7 +38,7 @@ The output struct `m_k` is used to map the intensities of each of the input imag
 input_image = '/path/to/input/image'
 out_name = '/path/to/input/image/normalized_scan'
 
-apply_intensity_transformation(input_image, out_name, m_k);
+apply_intensity_transformation(input_image, out_name, m_k, methodT);
 ```
 
 ## Notes:
