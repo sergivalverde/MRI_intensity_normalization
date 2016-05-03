@@ -21,7 +21,8 @@ function [m_k] = learn_intensity_landmarks(training_image_path, i_min, i_max)
 %
 % ***************************************************************************************************
     
-    num_images = size(training_image_path,1);
+    %num_images = size(training_image_path,1);
+    num_images = size(training_image_path,2);
     
     % compute the landmarks for each training image. Landmarks are learned without using the histogram.
     for im=1:num_images
@@ -33,9 +34,17 @@ function [m_k] = learn_intensity_landmarks(training_image_path, i_min, i_max)
         template_brainmask = current_image > 0.05;
         template = current_image(template_brainmask == 1);
         
+
+       %In order to find the landmarks for a given image Vi, we need to identify roughly the foreground part of the image. In an image of a
+        %head of a patient, for example, this part corresponds roughly to the set of all voxels that fall in the head. One of several simple methods can
+	%be utilized for this purpose. We employ thresholding. The threshold is chosen to be the overall mean intensity in the whole image.
+
+
         % find the minimum and maximum percentiles (p1 and p99) and the deciles (p10...p90)
-        Y = sort(template(:));        
+        Y = sort(template(:));
+        
         m(im,1) =  Y(ceil(0.01.*length(Y)));
+
         m(im,2) =  Y(ceil(0.1.*length(Y)));
         m(im,3) =  Y(ceil(0.2.*length(Y)));
         m(im,4) =  Y(ceil(0.3.*length(Y)));
@@ -45,18 +54,25 @@ function [m_k] = learn_intensity_landmarks(training_image_path, i_min, i_max)
         m(im,8) =  Y(ceil(0.7.*length(Y)));
         m(im,9) =  Y(ceil(0.8.*length(Y)));
         m(im,10) = Y(ceil(0.9.*length(Y)));
+
         m(im,11) = Y(ceil(0.99.*length(Y)));
 
         
         % map linearly the intensities with respect to i_max and i_min
-        linear_rate(im) = ((i_max - i_min) / (length(Y) -1)) / ((m(im,11) - m(im,1)) / (length(Y)-1));
-        m(im,:) = m(im,:) .* linear_rate(im);
+        %linear_rate(im) = ((i_max - i_min) / (length(Y) -1)) / ((m(im,11) - m(im,1)) / (length(Y)-1));
+        %m(im,:) = m(im,:) .* linear_rate(im);
+
+%	linear_rate = (i_max - i_min) / ( m(im,11) - m(im,1) );
+%        m(im,:) = i_min + (m(im,:) - m(im,1))  .* linear_rate;
+
+
+        m(im,:) = interp1( [ m(im,1) m(im,11)] , [ i_min i_max], m(im,:));
     end
     
     
     
     % rounded means of each of the landmarks from the set of training images
-    m_k.landmarks = mean(m,1)';
+    m_k.landmarks = mean(m,1);  % m_k.landmarks is a column vector
     
     % save additional info
     m_k.info.landmark_position = {'i_min', 'm10', 'm20', 'm30', 'm40', ...
@@ -64,7 +80,6 @@ function [m_k] = learn_intensity_landmarks(training_image_path, i_min, i_max)
     m_k.info.min_int = i_min;
     m_k.info.max_int = i_max;
     m_k.info.num_images = num_images;
-    m_k.info.image_path = training_image_path;
-    m_k.info.linear_rate = linear_rate;
+    m_k.info.image_path = training_image_path;    
     m_k.info.percentiles = m;   
 end
