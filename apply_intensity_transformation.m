@@ -19,11 +19,13 @@ function apply_intensity_transformation(input_path, output_path, m_k, methodT)
     % load the input image
     im_path = (input_path);
     current_scan = load_nifti(im_path);
-    current_image = current_scan.img;
+    current_image = double(current_scan.img);
     template_brainmask = current_image > 0.05;
     template = current_image(template_brainmask == 1);
 
-
+    % force the same data type 
+    m_k.landmarks = double(m_k.landmarks);
+    
     % find the minimum and maximum percentiles (p1 and p99) and the deciles (p10...p90)
     Y = sort(template(:));
 
@@ -67,6 +69,6 @@ function apply_intensity_transformation(input_path, output_path, m_k, methodT)
 
     % save the normalized scan
     current_scan.img = normalized_scan;
-    save_nifti(current_scan, output_path,'u');
+    save_nifti(current_scan, output_path,'c');
        
 end
