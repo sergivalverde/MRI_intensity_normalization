@@ -133,7 +133,7 @@ def do_hist_normalization(input_image,
     https://github.com/jcreinhold/intensity-normalization
 
     Args:
-        img (np.ndarray): image on which to find landmarks
+        input_image (np.ndarray): image on which to find landmarks
         landmark_percs (np.ndarray): corresponding landmark points of standard scale
         standard_scale (np.ndarray): landmarks on the standard scale
         mask (np.ndarray): foreground mask for img
