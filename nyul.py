@@ -105,18 +105,18 @@ def nyul_train_standard_scale(img_fns,
     # process each image in order to build the standard scale
     for i, (img_fn, mask_fn) in enumerate(zip(img_fns, mask_fns)):
         print('processing scan ', img_fn)
-        img_data = nib.load(img_fn).get_data()
-        mask = nib.load(mask_fn) if mask_fn is not None else None
+        img_data = nib.load(img_fn).get_data()  # extract image as numpy array
+        mask = nib.load(mask_fn) if mask_fn is not None else None  # load mask as nibabel object
         mask_data = img_data > img_data.mean() \
-            if mask is None else mask.get_data()
-        masked = img_data[mask_data > 0]
+            if mask is None else mask.get_data()  # extract mask as numpy array
+        masked = img_data[mask_data > 0]  # extract only part of image where mask is non-emtpy
         landmarks = get_landmarks(masked, percs)
         min_p = np.percentile(masked, i_min)
         max_p = np.percentile(masked, i_max)
-        f = interp1d([min_p, max_p], [i_s_min, i_s_max])
-        landmarks = np.array(f(landmarks))
-        standard_scale += landmarks
-    standard_scale = standard_scale / len(img_fns)
+        f = interp1d([min_p, max_p], [i_s_min, i_s_max])  # create interpolating function
+        landmarks = np.array(f(landmarks))  # interpolate landmarks
+        standard_scale += landmarks  # add landmark values of this volume to standard_scale
+    standard_scale = standard_scale / len(img_fns)  # get mean values
     return standard_scale, percs
 
 
@@ -132,22 +132,22 @@ def do_hist_normalization(input_image,
     Based on J.Reinhold code:
     https://github.com/jcreinhold/intensity-normalization
 
-
     Args:
         img (np.ndarray): image on which to find landmarks
         landmark_percs (np.ndarray): corresponding landmark points of standard scale
         standard_scale (np.ndarray): landmarks on the standard scale
         mask (np.ndarray): foreground mask for img
+        interp_type (str): type of interpolation
 
     Returns:
         normalized (np.ndarray): normalized image
     """
 
     mask_data = input_image > input_image.mean() if mask is None else mask
-    masked = input_image[mask_data > 0]
+    masked = input_image[mask_data > 0]  # extract only part of image where mask is non-emtpy
     landmarks = get_landmarks(masked, landmark_percs)
-    if interp_type == 'linear':
-        f = interp1d(landmarks, standard_scale, fill_value='extrapolate')
+    
+    f = interp1d(landmarks, standard_scale, kind=interp_type, fill_value='extrapolate')  # define interpolating function
 
     # apply transformation to input image
     return f(input_image)
